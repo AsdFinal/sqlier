@@ -1,0 +1,85 @@
+
+                          SQLIer v0.8.2b Documentation
+--------------------------------------------------------------------------------
+
+   Table of Contents
+ ---------------------
+
+ Introduction
+
+ I: Syntax
+  I.a: Argument Descriptions
+  I.b: Guessing Field Names
+
+ II: General Usage
+
+--------------------------------------------------------------------------------
+
+  Introduction
+----------------
+
+SQLIer is a script that brute forces passwords through 'true/false' SQL
+Injection vulnerabilities. With 'true/false' SQL Injection vulnerabilities, you
+cannot actually query data out of the database, only ask a statement that is
+returned 'true' or 'false'. SQLIer takes each character's ASCII code and asks
+a 'higher/lower' question to the database, eventually reaching the actual
+character code. This script also does not use quotes in the exploit to operate,
+meaning it will work for a wider range of sites.
+
+An 8 character password (containing any character from decimal ASCII code 1-127)
+takes approximately 1 minute to crack.
+
+
+
+  I. Syntax
+-------------
+
+sqlier [OPTIONS] [URL]
+
+   I.a: Options
+ ----------------
+
+   -c [host]              Clear all exploit information stored for [host].
+   -o [file]              Output cracked passwords to [file].
+   -s [seconds]           Wait [seconds] between page requests.
+   -u [usernames]         Usernames that will be brute forced from the database,
+                          comma separated (Username1,Username2,Username3).
+   -w [options]           Pass [options] to wget.
+
+
+   I.b: Guessing Field Names
+ -----------------------------
+
+   --table-names [table_names]   Comma separated list of table names to guess.
+   --user-fields [user_fields]   Comma separated list of username fields to
+                                 guess.
+   --pass-fields [pass_fields]   Comma separated list of password fields to
+                                 guess.
+
+
+  II. General Usage
+---------------------
+
+Given there is an SQL Injection vulnerability at: 
+ http://example.com/sqlihole.php?id=1
+
+Running "sqlier -s 10 http://example.com/sqlihole.php?id=1" will try to get
+enough information to exploit passwords out of the database, waiting 10 seconds
+in between each request.
+
+If the table, username field, and password field names have been guessed
+correctly, then the exploit is ready to brute force passwords out of the
+database by passing usernames to query, like so:
+
+ sqlier -s 10 example.com -u BCable,administrator,root,user4
+
+However, in the instance that the built in field/table names do not guess the
+correct fields, you can pass guesses like so:
+
+ sqlier -s 10 example.com --table-names [table_names] --user-fields [user_fields] --pass-fields [pass_fields]
+
+Until the correct table, username field, and password field names are known,
+SQLIer cannot brute force passwords from the database.
+
+Note: If "-s" is not passed, each request is done immediately after the last
+      request.  This can raise red flags, however.
