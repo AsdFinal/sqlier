@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# SQLIer - Version 0.8.1b
+# SQLIer - Version 0.8.2b
 #
 # Author: Brad Cable
 # Email: brad@bcable.net
@@ -55,7 +55,7 @@ done
 
 if [ ! -z "$dousage" ] || [ -z "$url" ]; then
 	echo
-	echo "SQLIer 0.8.1b"
+	echo "SQLIer 0.8.2b"
 	echo "Author: Brad Cable <brad@bcable.net>"
 	echo "License: Modified BSD (http://bcable.net/license.php)"
 	echo
@@ -77,11 +77,40 @@ if [ ! -z "$dousage" ] || [ -z "$url" ]; then
 	exit
 fi
 
+# one liners
+function addslashes(){ echo "$1" | sed -r "s/\"/\\\\\"/g"; }
+function chr(){ echo "print chr($1)" | python; }
+function ord(){ echo -n $1 | od -d | sed -r "s/[ ]+/ /g" | awk "{print \$2}" | grep -v "^$"; }
+function b64e(){ str="`addslashes "$1"`"; echo `echo -e "import base64\nprint base64.encodestring(\"\"\"$str\"\"\")" | python` | sed "s/ //g"; }
+function b64d(){ str="`addslashes "$1"`"; echo -e "import base64\nprint base64.decodestring(\"\"\"$str\"\"\")" | python; }
+
+function gen_randnum(){ let "rand=$RANDOM%($2-$1+1)+$1"; echo $rand; }
+function gen_randstr(){
+	cnt="$1"
+	newstr=""
+	i=0; while let i+=1 && [ "$i" -le "$cnt" ]; do
+		rand="`gen_randnum 0 61`"
+		let rand+=48
+		[ "$rand" -ge "58" ] && let rand+=7 && [ "$rand" -ge "91" ] && let rand+=6
+		newstr="$newstr`chr $rand`"
+	done
+	echo $newstr
+}
+
+function tmpfile(){
+	randstr="`gen_randstr 10`"
+	touch /tmp/$randstr
+	chmod 600 /tmp/$randstr
+	echo /tmp/$randstr
+}
+
 function clear_host(){
-	temp="`tempfile`"
-	cat $HOME/.sqlier/exploits | grep -vE "^$1	" > $temp
-	rm $HOME/.sqlier/exploits
-	mv $temp $HOME/.sqlier/exploits
+	if [ -d "$HOME/.sqlier" ]; then
+		temp="`tmpfile`"
+		cat $HOME/.sqlier/exploits | grep -vE "^$1	" > $temp
+		rm $HOME/.sqlier/exploits
+		mv $temp $HOME/.sqlier/exploits
+	fi
 }
 
 if [ ! -z "$clearhost" ]; then
@@ -115,13 +144,6 @@ function quit(){
 	exit
 }
 
-# one liners
-function addslashes(){ echo "$1" | sed -r "s/\"/\\\\\"/g"; }
-function chr(){ echo "print chr($1)" | python; }
-function ord(){ echo -n $1 | od -d | sed -r "s/[ ]+/ /g" | awk "{print \$2}" | grep -v "^$"; }
-function b64e(){ str="`addslashes "$1"`"; echo `echo -e "import base64\nprint base64.encodestring(\"\"\"$str\"\"\")" | python` | sed "s/ //g"; }
-function b64d(){ str="`addslashes "$1"`"; echo -e "import base64\nprint base64.decodestring(\"\"\"$str\"\"\")" | python; }
-
 function get_status(){
 	urle="`b64e "$url"`"
 	wgetoptse="`b64e "$wgetopts"`"
@@ -142,8 +164,8 @@ function sqli(){
 }
 
 function sameperc(){
-	file1="`tempfile`"
-	file2="`tempfile`"
+	file1="`tmpfile`"
+	file2="`tmpfile`"
 	echo "$1" > $file1
 	echo "$2" > $file2
 	tot="`cat "$file1" "$file2" | wc -c`"
@@ -197,19 +219,6 @@ function loop_fields(){
 	echo "$lofld"
 }
 
-function gen_randnum(){ let "rand=$RANDOM%($2-$1+1)+$1"; echo $rand; }
-function gen_randstr(){
-	cnt="$1"
-	newstr=""
-	i=0; while let i+=1 && [ "$i" -le "$cnt" ]; do
-		rand="`gen_randnum 0 61`"
-		let rand+=48
-		[ "$rand" -ge "58" ] && let rand+=7 && [ "$rand" -ge "91" ] && let rand+=6
-		newstr="$newstr`chr $rand`"
-	done
-	echo $newstr
-}
-
 function charify(){
 	[ -z "$2" ] && userstr="concat(" || userstr=""
 	i=0; while let i+=1 && [ "$i" -le "${#1}" ]; do userstr+="char("`ord ${1:$i-1:1}`"),"; done
@@ -219,7 +228,7 @@ function charify(){
 }
 # END FUNCTIONS #
 
-reqfile="`tempfile`"
+reqfile="`tmpfile`"
 echo 0 > $reqfile
 
 if [ -e "$HOME/.sqlier/exploits" ]; then
